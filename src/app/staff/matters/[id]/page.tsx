@@ -6,6 +6,7 @@ import {
   toggleDocumentVisibility,
   uploadDocument,
   sendMessage,
+  adjustRetainer,
 } from "@/actions/matters";
 import { formatCurrency, formatDate, formatDateTime, formatFileSize } from "@/lib/format";
 
@@ -24,7 +25,10 @@ export default async function StaffMatterDetailPage({
       billToContact: true,
       contacts: { include: { contact: true } },
       responsible: { include: { user: true } },
-      documents: { include: { currentVersion: true }, orderBy: { createdAt: "desc" } },
+      documents: {
+        include: { currentVersion: { include: { uploadedBy: true } } },
+        orderBy: { createdAt: "desc" },
+      },
       tasks: { orderBy: { dueDate: "asc" } },
       events: { orderBy: { start: "asc" } },
       invoices: { include: { lines: true }, orderBy: { createdAt: "desc" } },
@@ -35,20 +39,41 @@ export default async function StaffMatterDetailPage({
   if (!matter) notFound();
 
   const sendMessageWithMatter = sendMessage.bind(null, matterId);
+  const adjustRetainerWithMatter = adjustRetainer.bind(null, matterId);
 
   return (
     <div className="space-y-10">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">{matter.title}</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {matter.caseNumber && `#${matter.caseNumber} · `}
-          {matter.jurisdiction} · Bill to {matter.billToContact.displayName}
-        </p>
-        {matter.responsible.length > 0 && (
-          <p className="mt-1 text-xs text-slate-400">
-            Responsible: {matter.responsible.map((r) => `${r.user.name}${r.title ? ` (${r.title})` : ""}`).join(", ")}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">{matter.title}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {matter.caseNumber && `#${matter.caseNumber} · `}
+            {matter.jurisdiction} · Bill to {matter.billToContact.displayName}
           </p>
-        )}
+          {matter.responsible.length > 0 && (
+            <p className="mt-1 text-xs text-slate-400">
+              Responsible: {matter.responsible.map((r) => `${r.user.name}${r.title ? ` (${r.title})` : ""}`).join(", ")}
+            </p>
+          )}
+        </div>
+        <form action={adjustRetainerWithMatter} className="shrink-0 text-right">
+          <label className="block text-xs text-slate-400">Retainer balance due</label>
+          <div className="mt-1 flex gap-2">
+            <input
+              type="number"
+              step="0.01"
+              name="retainerBalance"
+              defaultValue={matter.retainerBalance.toString()}
+              className="w-28 rounded-md border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+            />
+            <button
+              type="submit"
+              className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-50 dark:text-slate-900"
+            >
+              Update
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Client portal access */}
@@ -96,7 +121,9 @@ export default async function StaffMatterDetailPage({
                 {doc.currentVersion && (
                   <p className="text-xs text-slate-400">
                     {doc.currentVersion.fileName} · {formatFileSize(doc.currentVersion.fileSize)} ·{" "}
-                    {formatDate(doc.currentVersion.createdAt)}
+                    {formatDate(doc.currentVersion.createdAt)} · uploaded by{" "}
+                    {doc.currentVersion.uploadedBy.name}
+                    {doc.currentVersion.uploadedBy.role === "CLIENT" ? " (client)" : ""}
                   </p>
                 )}
               </div>

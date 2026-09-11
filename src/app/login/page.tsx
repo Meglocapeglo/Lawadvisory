@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { LoginForm } from "./login-form";
 
 export default function LoginPage() {
@@ -12,14 +13,13 @@ export default function LoginPage() {
           right dashboard automatically.
         </p>
         <LoginForm />
-        <div className="mt-6 rounded-md border border-slate-200 bg-white p-4 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-          <p className="font-medium text-slate-700 dark:text-slate-300">
-            Demo accounts (password: password123)
-          </p>
-          <ul className="mt-2 space-y-1">
-            <li>attorney@lawadvisory.test — staff</li>
-            <li>client@lawadvisory.test — client</li>
-          </ul>
+        <div className="mt-4 flex justify-between text-sm">
+          <Link href="/forgot-password" className="text-slate-500 hover:text-slate-900 dark:hover:text-slate-200">
+            Forgot password?
+          </Link>
+          <Link href="/signup" className="text-slate-500 hover:text-slate-900 dark:hover:text-slate-200">
+            Client sign up
+          </Link>
         </div>
       </div>
     </div>

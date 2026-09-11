@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/dal";
 import { logout } from "@/actions/auth";
+import { prisma } from "@/lib/prisma";
+import { formatCurrency } from "@/lib/format";
 
 export default async function PortalLayout({
   children,
@@ -8,6 +10,14 @@ export default async function PortalLayout({
   children: React.ReactNode;
 }) {
   const user = await requireRole("CLIENT");
+
+  const links = user.contactId
+    ? await prisma.matterContact.findMany({
+        where: { contactId: user.contactId, portalAccess: true },
+        include: { matter: { select: { retainerBalance: true } } },
+      })
+    : [];
+  const totalOwed = links.reduce((sum, l) => sum + Number(l.matter.retainerBalance), 0);
 
   return (
     <div className="flex min-h-full flex-col bg-slate-50 dark:bg-slate-950">
@@ -17,6 +27,11 @@ export default async function PortalLayout({
             Lawadvisory Client Portal
           </Link>
           <div className="flex items-center gap-4">
+            {totalOwed > 0 && (
+              <span className="rounded-md bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                Retainer balance due: {formatCurrency(totalOwed)}
+              </span>
+            )}
             <span className="text-sm text-slate-600 dark:text-slate-400">{user.name}</span>
             <form action={logout}>
               <button

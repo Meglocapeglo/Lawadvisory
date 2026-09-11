@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatFileSize } from "@/lib/format";
+import { uploadEvidence } from "@/actions/matters";
 
 export default async function ClientDocumentsPage({
   params,
@@ -14,6 +15,8 @@ export default async function ClientDocumentsPage({
     include: { currentVersion: true },
     orderBy: { createdAt: "desc" },
   });
+
+  const uploadEvidenceWithMatter = uploadEvidence.bind(null, matterId);
 
   return (
     <div>
@@ -49,6 +52,44 @@ export default async function ClientDocumentsPage({
           ))}
         </ul>
       )}
+
+      <div className="mt-8">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+          Upload evidence
+        </h3>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Share a document with your attorney — photos, receipts, correspondence, anything
+          relevant to your case.
+        </p>
+        <form
+          action={uploadEvidenceWithMatter}
+          className="mt-3 flex flex-wrap items-end gap-3 rounded-md border border-dashed border-slate-300 p-4 dark:border-slate-700"
+        >
+          <div className="flex-1 min-w-[160px]">
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Title</label>
+            <input
+              name="title"
+              required
+              className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900"
+            />
+          </div>
+          <div className="flex-1 min-w-[160px]">
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">File</label>
+            <input
+              type="file"
+              name="file"
+              required
+              className="mt-1 w-full text-sm text-slate-600 dark:text-slate-400"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-50 dark:text-slate-900"
+          >
+            Upload
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -13,7 +13,23 @@ export default async function StaffDashboard() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Matters</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Matters</h1>
+        <div className="flex gap-3">
+          <Link
+            href="/staff/clients/new"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            New client
+          </Link>
+          <Link
+            href="/staff/matters/new"
+            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-50 dark:text-slate-900"
+          >
+            New matter
+          </Link>
+        </div>
+      </div>
 
       <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <table className="w-full text-sm">

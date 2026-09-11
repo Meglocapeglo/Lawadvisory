@@ -89,6 +89,7 @@ model Matter {
   jurisdiction   String?
   matterType     String?
   status         MatterStatus @default(OPEN)
+  retainerBalance Decimal     @default(0) @db.Decimal(10, 2)
   openedAt       DateTime     @default(now())
   closedAt       DateTime?
   createdAt      DateTime     @default(now())
