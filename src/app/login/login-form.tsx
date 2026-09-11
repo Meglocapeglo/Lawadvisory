@@ -3,11 +3,14 @@
 import { useActionState } from "react";
 import { login } from "@/actions/auth";
 
+const inputClass =
+  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm transition-colors focus:border-brand-brass focus:outline-none focus:ring-1 focus:ring-brand-brass dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
+
 export function LoginForm() {
   const [state, formAction, pending] = useActionState(login, undefined);
 
   return (
-    <form action={formAction} className="mt-8 space-y-4">
+    <form action={formAction} className="mt-6 space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
           Email
@@ -18,7 +21,7 @@ export function LoginForm() {
           type="email"
           required
           autoComplete="email"
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          className={inputClass}
         />
         {state?.errors?.email && (
           <p className="mt-1 text-sm text-red-600">{state.errors.email[0]}</p>
@@ -35,7 +38,7 @@ export function LoginForm() {
           type="password"
           required
           autoComplete="current-password"
-          className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          className={inputClass}
         />
         {state?.errors?.password && (
           <p className="mt-1 text-sm text-red-600">{state.errors.password[0]}</p>
@@ -49,7 +52,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="flex h-10 w-full items-center justify-center rounded-md bg-slate-900 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-60 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200"
+        className="flex h-11 w-full items-center justify-center rounded-md bg-brand-navy text-sm font-medium tracking-wide text-white transition-colors hover:bg-brand-navy-deep disabled:opacity-60 dark:bg-brand-brass dark:text-brand-navy-deep dark:hover:bg-brand-brass-hover"
       >
         {pending ? "Signing in…" : "Sign in"}
       </button>

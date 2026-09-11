@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/dal";
 import { logout } from "@/actions/auth";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/format";
+import { BrandMark } from "@/components/brand-mark";
 
 export default async function PortalLayout({
   children,
@@ -23,8 +24,12 @@ export default async function PortalLayout({
     <div className="flex min-h-full flex-col bg-slate-50 dark:bg-slate-950">
       <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/portal" className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-            Lawadvisory Client Portal
+          <Link href="/portal">
+            <BrandMark
+              className="text-brand-navy dark:text-slate-50"
+              iconClassName="h-5 w-5 text-brand-brass"
+              textClassName="text-base"
+            />
           </Link>
           <div className="flex items-center gap-4">
             {totalOwed > 0 && (

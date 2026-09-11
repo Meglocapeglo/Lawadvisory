@@ -58,8 +58,8 @@ export default async function ClientDocumentsPage({
           Upload evidence
         </h3>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Share a document with your attorney — photos, receipts, correspondence, anything
-          relevant to your case.
+          Share anything relevant to your case with your attorney — photos, videos,
+          receipts, correspondence, or documents. Large video files are supported (up to 150MB).
         </p>
         <form
           action={uploadEvidenceWithMatter}
