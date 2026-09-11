@@ -1,0 +1,254 @@
+// Domain model informed by OpenLawOffice's Matters/Contacts/Documents/Billing
+// structure (https://github.com/NodineLegal/OpenLawOffice, Apache-2.0), redesigned
+// client-portal-first: matter access is opt-in per contact, and documents/tasks/
+// events carry an explicit visibleToClient flag rather than being shared by default.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  CLIENT
+}
+
+enum MatterStatus {
+  OPEN
+  PENDING
+  CLOSED
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum MatterContactRole {
+  CLIENT
+  OPPOSING_PARTY
+  WITNESS
+  OTHER
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Only set for CLIENT users: binds their login to their contact record.
+  contactId Int?     @unique
+  contact   Contact? @relation(fields: [contactId], references: [id])
+
+  responsibleMatters MatterResponsible[]
+  assignedTasks      Task[]              @relation("TaskAssignedTo")
+  timeEntries        TimeEntry[]
+  uploadedVersions   DocumentVersion[]
+  sentMessages       Message[]
+}
+
+model Contact {
+  id          Int      @id @default(autoincrement())
+  displayName String
+  givenName   String?
+  surname     String?
+  email       String?
+  phone       String?
+  company     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user           User?
+  matterLinks    MatterContact[]
+  billedMatters  Matter[]        @relation("MatterBillToContact")
+  invoices       Invoice[]
+}
+
+model Matter {
+  id             Int          @id @default(autoincrement())
+  title          String
+  caseNumber     String?
+  jurisdiction   String?
+  matterType     String?
+  status         MatterStatus @default(OPEN)
+  openedAt       DateTime     @default(now())
+  closedAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  billToContactId Int
+  billToContact   Contact @relation("MatterBillToContact", fields: [billToContactId], references: [id])
+
+  contacts     MatterContact[]
+  responsible  MatterResponsible[]
+  documents    Document[]
+  tasks        Task[]
+  events       Event[]
+  timeEntries  TimeEntry[]
+  invoices     Invoice[]
+  messages     Message[]
+}
+
+// Links a contact to a matter. portalAccess must be explicitly granted by
+// staff before that contact's linked User (if any) can see the matter.
+model MatterContact {
+  id           Int               @id @default(autoincrement())
+  matterId     Int
+  matter       Matter            @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  contactId    Int
+  contact      Contact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  role         MatterContactRole @default(CLIENT)
+  portalAccess Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+
+  @@unique([matterId, contactId])
+}
+
+// Staff assigned to work a matter (attorney, paralegal, etc).
+model MatterResponsible {
+  id        Int      @id @default(autoincrement())
+  matterId  Int
+  matter    Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String? // e.g. "Lead Attorney", "Paralegal"
+  createdAt DateTime @default(now())
+
+  @@unique([matterId, userId])
+}
+
+model Document {
+  id              Int      @id @default(autoincrement())
+  matterId        Int
+  matter          Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  visibleToClient Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  versions         DocumentVersion[] @relation("DocumentVersions")
+  currentVersionId Int?              @unique
+  currentVersion   DocumentVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+}
+
+model DocumentVersion {
+  id            Int      @id @default(autoincrement())
+  documentId    Int
+  document      Document @relation("DocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  fileName      String
+  fileUrl       String
+  fileSize      Int
+  uploadedById  Int
+  uploadedBy    User     @relation(fields: [uploadedById], references: [id])
+  createdAt     DateTime @default(now())
+
+  currentFor Document? @relation("CurrentVersion")
+
+  @@unique([documentId, versionNumber])
+}
+
+model Task {
+  id              Int        @id @default(autoincrement())
+  matterId        Int
+  matter          Matter     @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  status          TaskStatus @default(OPEN)
+  dueDate         DateTime?
+  visibleToClient Boolean    @default(false)
+  assignedToId    Int?
+  assignedTo      User?      @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model Event {
+  id              Int       @id @default(autoincrement())
+  matterId        Int
+  matter          Matter    @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  location        String?
+  start           DateTime
+  end             DateTime?
+  visibleToClient Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+}
+
+model TimeEntry {
+  id          Int      @id @default(autoincrement())
+  matterId    Int
+  matter      Matter   @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  description String
+  minutes     Int
+  billable    Boolean  @default(true)
+  rate        Decimal? @db.Decimal(10, 2)
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  invoiceLine InvoiceLine?
+}
+
+model Invoice {
+  id        Int           @id @default(autoincrement())
+  matterId  Int
+  matter    Matter        @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  contactId Int
+  contact   Contact       @relation(fields: [contactId], references: [id])
+  number    String        @unique
+  status    InvoiceStatus @default(DRAFT)
+  issuedAt  DateTime?
+  dueAt     DateTime?
+  subtotal  Decimal       @db.Decimal(10, 2)
+  total     Decimal       @db.Decimal(10, 2)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  lines InvoiceLine[]
+}
+
+model InvoiceLine {
+  id          Int     @id @default(autoincrement())
+  invoiceId   Int
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal @default(1) @db.Decimal(10, 2)
+  rate        Decimal @db.Decimal(10, 2)
+  amount      Decimal @db.Decimal(10, 2)
+
+  timeEntryId Int?       @unique
+  timeEntry   TimeEntry? @relation(fields: [timeEntryId], references: [id])
+}
+
+model Message {
+  id        Int       @id @default(autoincrement())
+  matterId  Int
+  matter    Matter    @relation(fields: [matterId], references: [id], onDelete: Cascade)
+  senderId  Int
+  sender    User      @relation(fields: [senderId], references: [id])
+  body      String
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+}
