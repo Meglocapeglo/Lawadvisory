@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/dal";
 import {
@@ -86,9 +87,18 @@ export default async function StaffMatterDetailPage({
           {matter.contacts.map((mc) => (
             <li key={mc.id} className="flex items-center justify-between p-3 text-sm">
               <div>
-                <span className="font-medium text-slate-900 dark:text-slate-50">
-                  {mc.contact.displayName}
-                </span>
+                {mc.role === "CLIENT" ? (
+                  <Link
+                    href={`/staff/clients/${mc.contactId}`}
+                    className="font-medium text-slate-900 hover:underline dark:text-slate-50"
+                  >
+                    {mc.contact.displayName}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-slate-900 dark:text-slate-50">
+                    {mc.contact.displayName}
+                  </span>
+                )}
                 <span className="ml-2 text-xs text-slate-400">{mc.role}</span>
               </div>
               {mc.role === "CLIENT" && (

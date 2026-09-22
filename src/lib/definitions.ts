@@ -64,3 +64,7 @@ export type CreateMatterFormState =
       message?: string;
     }
   | undefined;
+
+export type ResetPasswordState =
+  | { success?: { password: string }; message?: string }
+  | undefined;

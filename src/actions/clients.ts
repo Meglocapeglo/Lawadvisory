@@ -1,10 +1,15 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
 import { generatePassword } from "@/lib/password";
-import { CreateClientFormSchema, type CreateClientFormState } from "@/lib/definitions";
+import {
+  CreateClientFormSchema,
+  type CreateClientFormState,
+  type ResetPasswordState,
+} from "@/lib/definitions";
 
 export async function createClient(
   _state: CreateClientFormState,
@@ -41,4 +46,25 @@ export async function createClient(
   });
 
   return { success: { email, password } };
+}
+
+export async function resetClientPassword(
+  userId: number,
+  _state: ResetPasswordState,
+  _formData: FormData
+): Promise<ResetPasswordState> {
+  await requireRole("STAFF", "ADMIN");
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || user.role !== "CLIENT") {
+    return { message: "Client account not found." };
+  }
+
+  const password = generatePassword();
+  const passwordHash = await bcrypt.hash(password, 10);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+  revalidatePath(`/staff/clients/${user.contactId}`);
+
+  return { success: { password } };
 }
